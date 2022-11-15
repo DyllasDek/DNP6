@@ -16,7 +16,7 @@ State = Enum('State', ['follower', 'candidate', 'leader'], start=1)
 
 # Initial values of server
 id = int(sys.argv[1])
-timer = random.randrange(1000, 1500) * 0.001
+timer = random.randrange(150, 300) * 0.001
 term_number = 0
 voted = False
 asleep = False
@@ -152,17 +152,16 @@ def leader_job():
             return
         try:
             if not asleep and state == State.leader:
-                print(f'Try to send heart')
                 send_to_all(heartbeat)
-                print(f'Sended heart')
                 time.sleep(0.05)
         except:
             continue
 
+
 # Help func to multithread sending msg
-
-
 def send_to_all(func):
+    if dead:
+        return
     servers = []
     for n in server_address:
         servers.append(Thread(target=func, args=(n,)))
@@ -184,7 +183,6 @@ def start_elections():
         # Send to all servers request for vote
         send_to_all(request_vote)
         print("Votes received")
-        print(f'n_votes:{n_votes} and n_nodes:{n_nodes//2 + 1}')
         # If state not changed and get enough votes - leader
         # If not, timer will give us follower state
         if state == State.candidate and n_votes >= n_nodes//2 + 1:
@@ -194,6 +192,7 @@ def start_elections():
 
 
 def suspend(period):
+    global asleep
     if not asleep:
         print(f"Sleeping for {period} seconds")
         asleep = True
@@ -229,7 +228,6 @@ def AppendEntries(term, leader_id):
             state_out()
         return (term_number, True)
     return (term_number, False)
-# Ну а остальное клиентское, там просто запросы по функциям
 
 
 class Handler(pb2_grpc.RaftServiceServicer):

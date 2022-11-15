@@ -29,7 +29,7 @@ def get_leader():
 
 
 def suspend(period):
-    stub.Suspend(pb2.Time(period))
+    stub.Suspend(pb2.Time(period=period))
 
 
 if __name__ == "__main__":
@@ -46,8 +46,7 @@ if __name__ == "__main__":
                     get_leader()
                     continue
                 if line[0] == 'suspend':
-                    time = line[1].split(' ', 1)
-                    suspend(time)
+                    suspend(int(line[1]))
                 if line[0] == 'quit':
                     break
         except KeyboardInterrupt:
@@ -56,4 +55,4 @@ if __name__ == "__main__":
         #    print("Something wrong, try again!")
         #    pass
 
-print("Shutting down")
+print("The client ends")
