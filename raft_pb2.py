@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nraft.proto\"\x0e\n\x0c\x45mptyMessage\"\x16\n\x04Time\x12\x0e\n\x06period\x18\x01 \x01(\x05\"$\n\x08NodeInfo\x12\x0c\n\x04term\x18\x01 \x01(\x05\x12\n\n\x02id\x18\x02 \x01(\x05\")\n\nLeaderInfo\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\t\"*\n\nVoteResult\x12\x0c\n\x04term\x18\x01 \x01(\x05\x12\x0e\n\x06result\x18\x02 \x01(\x08\x32\xa3\x01\n\x0bRaftService\x12\'\n\tGetLeader\x12\r.EmptyMessage\x1a\x0b.LeaderInfo\x12\x1f\n\x07Suspend\x12\x05.Time\x1a\r.EmptyMessage\x12!\n\x07\x41skVote\x12\t.NodeInfo\x1a\x0b.VoteResult\x12\'\n\rAppendEntries\x12\t.NodeInfo\x1a\x0b.VoteResultb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nraft.proto\"\x0e\n\x0c\x45mptyMessage\"\x16\n\x04Time\x12\x0e\n\x06period\x18\x01 \x01(\x05\"$\n\x08NodeInfo\x12\x0c\n\x04term\x18\x01 \x01(\x05\x12\n\n\x02id\x18\x02 \x01(\x05\")\n\nLeaderInfo\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\t\"*\n\nVoteResult\x12\x0c\n\x04term\x18\x01 \x01(\x05\x12\x0e\n\x06result\x18\x02 \x01(\x08\x32\xcf\x01\n\x0bRaftService\x12\'\n\tGetLeader\x12\r.EmptyMessage\x1a\x0b.LeaderInfo\x12\x1f\n\x07Suspend\x12\x05.Time\x1a\r.EmptyMessage\x12!\n\x07\x41skVote\x12\t.NodeInfo\x1a\x0b.VoteResult\x12\'\n\rAppendEntries\x12\t.NodeInfo\x1a\x0b.VoteResult\x12*\n\nCheckAlive\x12\r.EmptyMessage\x1a\r.EmptyMessageb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'raft_pb2', globals())
@@ -31,5 +31,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _VOTERESULT._serialized_start=135
   _VOTERESULT._serialized_end=177
   _RAFTSERVICE._serialized_start=180
-  _RAFTSERVICE._serialized_end=343
+  _RAFTSERVICE._serialized_end=387
 # @@protoc_insertion_point(module_scope)

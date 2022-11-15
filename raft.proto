@@ -5,6 +5,7 @@ service RaftService {
     rpc Suspend(Time) returns (EmptyMessage);
     rpc AskVote(NodeInfo) returns (VoteResult);
     rpc AppendEntries(NodeInfo) returns (VoteResult);
+    rpc CheckAlive(EmptyMessage) returns (EmptyMessage);
 
 }
 
