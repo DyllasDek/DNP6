@@ -116,7 +116,7 @@ def request_vote(node_id):
             ch = grpc.insecure_channel(addr)
             stub = pb2_grpc.RaftServiceStub(ch)
 
-            resp = stub.AskVote(pb2.NodeInfo(term=term_number, id=id))
+            resp = stub.AskVote(pb2.NodeInfo(term=term_number, id=id))  #asking specific node for a vote 
             voted = resp.result
             if voted:
                 n_votes += 1
@@ -128,25 +128,26 @@ def request_vote(node_id):
     except:
         return
 
-
+#just function, which sends for each node a heartbeat (appendentities function)
 def heartbeat(node_id):
     try:
         global state, term_number, id
-        if not asleep and state == State.leader:
+        if not asleep and state == State.leader: #if we are leader and not suspended
             addr = f'{server_address[node_id][0]}:{server_address[node_id][1]}'
             ch = grpc.insecure_channel(addr)
             stub = pb2_grpc.RaftServiceStub(ch)
-            resp = stub.AppendEntries(pb2.NodeInfo(term=term_number, id=id))
+            resp = stub.AppendEntries(pb2.NodeInfo(term=term_number, id=id)) 
             success = resp.result
-            if not success:
+            if not success: #if someone is leader, we need to change to the follower mode
                 term_number = resp.term
                 state = State.follower
                 state_out()
+        return
     except:
         return
 
 
-def leader_job():
+def leader_job(): #thread where we send heartbeats if we are the leader
     while True:
         if dead:
             return
@@ -189,7 +190,7 @@ def start_elections():
             timer_restart = True
             state = State.leader
             state_out()
-
+    return
 
 def suspend(period):
     global asleep
@@ -200,6 +201,7 @@ def suspend(period):
         asleep = False
 
 
+#print current leader and returning it for grpc client leader function
 def get_leader():
     if not asleep:
         result = f'{leader_info[0]} {leader_info[1]}:{leader_info[2]}'
@@ -210,16 +212,16 @@ def get_leader():
 def client_commands(msg):
     print(f'Command from client: {msg}')
 
-
+#this is receiving heartbeat from server function 
 def AppendEntries(term, leader_id):
     if asleep:
         return
 
     global timer_restart, leader_info, term_number, state, need_state_update
-    timer_restart = True
-    if term >= term_number:
+    timer_restart = True #update timer
+    if term >= term_number: 
         need_state_update = term > term_number
-        if leader_id is not leader_info[0]:
+        if leader_id is not leader_info[0]: 
             ip, port = server_address[leader_id]
             leader_info = (leader_id, ip, port)
         term_number = term
@@ -227,7 +229,7 @@ def AppendEntries(term, leader_id):
         if need_state_update:
             state_out()
         return (term_number, True)
-    return (term_number, False)
+    return (term_number, False) 
 
 
 class Handler(pb2_grpc.RaftServiceServicer):

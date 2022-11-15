@@ -51,8 +51,8 @@ if __name__ == "__main__":
                     break
         except KeyboardInterrupt:
             break
-        # except:
-        #    print("Something wrong, try again!")
-        #    pass
+        except:
+           print("Something wrong, try again!")
+           pass
 
 print("The client ends")
