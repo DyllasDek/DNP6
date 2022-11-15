@@ -17,7 +17,7 @@ class RaftServiceStub(object):
         self.GetLeader = channel.unary_unary(
                 '/RaftService/GetLeader',
                 request_serializer=raft__pb2.EmptyMessage.SerializeToString,
-                response_deserializer=raft__pb2.NodeInfo.FromString,
+                response_deserializer=raft__pb2.LeaderInfo.FromString,
                 )
         self.Suspend = channel.unary_unary(
                 '/RaftService/Suspend',
@@ -69,7 +69,7 @@ def add_RaftServiceServicer_to_server(servicer, server):
             'GetLeader': grpc.unary_unary_rpc_method_handler(
                     servicer.GetLeader,
                     request_deserializer=raft__pb2.EmptyMessage.FromString,
-                    response_serializer=raft__pb2.NodeInfo.SerializeToString,
+                    response_serializer=raft__pb2.LeaderInfo.SerializeToString,
             ),
             'Suspend': grpc.unary_unary_rpc_method_handler(
                     servicer.Suspend,
@@ -109,7 +109,7 @@ class RaftService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/RaftService/GetLeader',
             raft__pb2.EmptyMessage.SerializeToString,
-            raft__pb2.NodeInfo.FromString,
+            raft__pb2.LeaderInfo.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

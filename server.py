@@ -189,7 +189,7 @@ def get_leader():
     if not asleep:
         result = f'{leader_info[0]} {leader_info[1]}:{leader_info[2]}'
         print(result)
-        return result
+        return leader_info[0], f"{leader_info[1]}:{leader_info[2]}"
 
 timer_t = Thread(target=timer_thr)
 lead_t = Thread(target=leader_job)
@@ -217,7 +217,7 @@ def AppendEntries(term, leader_id):
 class Handler(pb2_grpc.RaftServiceServicer):
 
     def AskVote(self, request, context):
-        res= vote_check(request.term, request.result)
+        res= vote_check(request.term, request.id)
         return pb2.VoteResult(term=res[0],result= res[1])
 
     def AppendEntries(self, request, context):
@@ -226,3 +226,7 @@ class Handler(pb2_grpc.RaftServiceServicer):
 
     def Suspend(self, request, context):
         suspend(request.period)
+    
+    def GetLeader(self, request, context):
+        id, ip= get_leader()
+        return pb2.LeaderInfo(id=id,address=ip)
