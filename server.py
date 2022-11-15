@@ -11,7 +11,7 @@ from threading import Thread
 # Enumerator for better state change
 
 
-States = Enum('States', 'follower candidate leader', start=1)
+State = Enum('State', 'follower candidate leader', start=1)
 
 # Initial values of server
 id = int(sys.argv[1])
@@ -19,7 +19,7 @@ timer = random.randrange(150, 301) * 0.001
 term_number = 0
 voted = False
 asleep = False
-state = States.follower
+state = State.follower
 n_votes = 0
 n_nodes = 0
 timer_restart = False
@@ -46,9 +46,6 @@ else:
     del server_address[id]
 
 
-timer_t = Thread(target=timer_thr)
-lead_t = Thread(target=leader_job)
-
 
 # Prints state of server
 def state_out():
@@ -66,25 +63,26 @@ def timer_thr():
         # If we get end of time, review server state
         elif ((datetime.now() - start).total_seconds() >= timer):
             # If leader, just restart timer
-            if state == States.leader:
+            if state == State.leader:
                 timer_restart = True
             # If candidate - check votes and change state
-            elif state == States.candidate:
+            elif state == State.candidate:
                 cond = n_votes >= n_nodes//2 + 1
-                state = States.leader if cond else States.follower
+                state = State.leader if cond else State.follower
                 timer_restart = True
                 state_out()
             # If follower and no hearth beat - start elections
-            elif state == States.follower:
+            elif state == State.follower:
                 start_elections()
+
 
 
 # Check vote for specific id
 # If itself - vote itself
 def vote_check(term, id):
     # Assign global variables
-    global term_number
-    global state
+    global term_number,leader_info,state,timer_restart
+
     if not asleep:
         reply = None
         timer_restart = True
@@ -94,7 +92,7 @@ def vote_check(term, id):
             reply = False
         if term_number == term and not voted:
             voted = True
-            state = States.follower
+            state = State.follower
             leader_info = (id, server_address[id][0], server_address[id][1])
             print(f'Voted for node {id}')
             reply = True
@@ -103,8 +101,7 @@ def vote_check(term, id):
 
 # Func for threads requests. Get votes and calculate states
 def request_vote(id):
-    if not asleep:
-        if state == States.candidate:
+    if not asleep and state == State.candidate:
             global term_number
             addr = f'{server_address[id][0]}:{server_address[id][1]}'
             ch = grpc.insecure_channel()
@@ -123,9 +120,8 @@ def request_vote(id):
             #   state_out()
 
 
-def hearthbeat():
-    if not asleep:
-        if state == States.leader:
+def heartbeat():
+    if not asleep and state == State.leader:
             global term_number
             addr = f'{server_address[id][0]}:{server_address[id][1]}'
             ch = grpc.insecure_channel()
@@ -142,10 +138,9 @@ def hearthbeat():
 
 def leader_job():
     while True:
-        if not asleep:
-            if state == States.leader:
-                send_to_all(hearthbeat)
-                time.sleep(0.05)
+        if not asleep and state == State.leader:
+            send_to_all(heartbeat)
+            time.sleep(0.05)
 
 # Help func to multithread sending msg
 
@@ -166,7 +161,7 @@ def start_elections():
         global term_number
         print("The leader is dead")
         # Change curr state
-        state = States.candidate
+        state = State.candidate
         term_number += 1
         state_out()
         # Check votes, if not voted - give myself vote
@@ -176,7 +171,7 @@ def start_elections():
         print("Votes received")
         # If state not changed and get enough votes - leader
         # If not, timer will give us follower state
-        if state == States.Candidate and n_votes >= n_nodes//2 + 1:
+        if state == State.Candidate and n_votes >= n_nodes//2 + 1:
             global timer_restart
             timer_restart = True
             state = State.Leader
@@ -197,6 +192,8 @@ def get_leader(self):
         print(result)
         return result
 
+timer_t = Thread(target=timer_thr)
+lead_t = Thread(target=leader_job)
 
 """ 
 Если вкратце, append_entries в хенделере должен 
@@ -220,7 +217,25 @@ if not asleep:
         return (term_number, True)
     return (term_number, False)
 """
-# Ну а остальное клиентское, там просто запросы по функциям
+
+def AppendEntries(term, leader_id):
+    if asleep:
+        return
+      
+    global timer_restart, leader_info, term_number, state, need_state_update
+    timer_restart = True
+    if term >= term_number:
+        need_state_update= term > term_number
+        if leader_id is not leader_info[0]:
+            ip,port = server_address[leader_id]
+            leader_info = (leader_id, ip, port)
+        term_number = term
+        state = State.Follower
+        if need_state_update:
+            state_out()
+        return (term_number, True)
+    return (term_number, False)
+# Ну а остальное клиентское, там просто запросы по функциям 
 
 """
 class Handler(pb2_grpc.SimpleServiceServicer):

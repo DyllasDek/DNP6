@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+service RaftService {
+    rpc GetLeader(EmptyMessage) returns (LeaderInfo);
+    rpc Suspend(Time) returns (EmptyMessage);
+}
+
+message EmptyMessage {
+}
+
+message Time {
+    int32 period = 1;
+}
+
+message LeaderInfo {
+    int32 term = 1;
+    string id = 2;
+}

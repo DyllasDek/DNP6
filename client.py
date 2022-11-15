@@ -34,7 +34,7 @@ def getleader():
     print('lox1')
 
 
-def sus(period):
+def suspend(period):
     #resp = stub.GetChord(pb2.GetInfo())
 
     # for elem in resp.table:
@@ -57,8 +57,8 @@ if __name__ == "__main__":
                     continue
                 if line[0] == 'suspend':
                     time = line[1].split(' ', 1)
-                    sus(time)
-                if line[0] == 'exit':
+                    suspend(time)
+                if line[0] == 'quit':
                     break
         except KeyboardInterrupt:
             break
