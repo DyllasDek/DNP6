@@ -1,17 +1,11 @@
 import sys
 import grpc
-import chord_pb2_grpc as pb2_grpc
-import chord_pb2 as pb2
+import raft_pb2_grpc as pb2_grpc
+import raft_pb2 as pb2
 
 channel = None
 stub = None
 
-
-def send_messages(val):
-    for n in list(map(int, val)):
-        req = pb2.PrimeMessage(
-            num=n)
-        yield req
 
 
 def connect(ip):
@@ -28,18 +22,12 @@ def connect(ip):
         pass
 
 
-def getleader():
-    #resp = stub.GetLeader(pb2.GetInfo())
-    #print(f'{resp.id} {resp.ip}')
-    print('lox1')
-
+def get_leader():
+    resp = stub.GetLeader(pb2.EmptyMessage())
+    print(f'{resp.id} {resp.ip}')
 
 def suspend(period):
-    #resp = stub.GetChord(pb2.GetInfo())
-
-    # for elem in resp.table:
-    #    print(elem)
-    print('lox2')
+    stub.Suspend(pb2.Time(period))
 
 
 if __name__ == "__main__":
@@ -49,11 +37,11 @@ if __name__ == "__main__":
             if len(line) != 0:
                 line = line.split(' ', 1)
                 if line[0] == "connect":
-                    connect(line[1])
+                    line = line[1].split(' ', 1)
+                    connect(f"{line[1]}:{line[2]}")
                     continue
-
                 if line[0] == "getleader":
-                    getleader()
+                    get_leader()
                     continue
                 if line[0] == 'suspend':
                     time = line[1].split(' ', 1)

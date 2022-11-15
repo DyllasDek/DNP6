@@ -1,8 +1,11 @@
 syntax = "proto3";
 
 service RaftService {
-    rpc GetLeader(EmptyMessage) returns (LeaderInfo);
+    rpc GetLeader(EmptyMessage) returns (NodeInfo);
     rpc Suspend(Time) returns (EmptyMessage);
+    rpc AskVote(NodeInfo) returns (VoteResult);
+    rpc AppendEntries(NodeInfo) returns (VoteResult);
+
 }
 
 message EmptyMessage {
@@ -12,7 +15,13 @@ message Time {
     int32 period = 1;
 }
 
-message LeaderInfo {
+message NodeInfo {
     int32 term = 1;
     string id = 2;
+}
+
+
+message VoteResult {
+    int32 term = 1;
+    bool result = 2;
 }

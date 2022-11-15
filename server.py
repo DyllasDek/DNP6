@@ -2,8 +2,8 @@ import sys
 import random
 import time
 import grpc
-#import chord_pb2_grpc as pb2_grpc
-#import chord_pb2 as pb2
+import raft_pb2_grpc as pb2_grpc
+import raft_pb2 as pb2
 from enum import Enum
 from datetime import datetime
 from threading import Thread
@@ -100,40 +100,40 @@ def vote_check(term, id):
 
 
 # Func for threads requests. Get votes and calculate states
-def request_vote(id):
+def request_vote(node_id):
     if not asleep and state == State.candidate:
-            global term_number
-            addr = f'{server_address[id][0]}:{server_address[id][1]}'
+            global term_number, id
+            addr = f'{server_address[node_id][0]}:{server_address[node_id][1]}'
             ch = grpc.insecure_channel()
-            stub = pb2_grpc.SimpleServiceStub(ch)
+            stub = pb2_grpc.RaftServiceStub(ch)
 
-            # stub, Аня, вверяю тебе
-
-            # resp = stub.
-            # if resp.voted:
-            #   global n_votes
-            #   n_votes += 1
-            # if resp.term > term_number:
-            #   global term_number
-            #   state = States.follower
-            #   term_number = term
-            #   state_out()
+            resp = stub.AskVote(pb2.NodeInfo(term= term_number, id = id))
+            voted = resp.result
+            if voted:
+                global n_votes
+                n_votes += 1
+            if resp.term > term_number:
+                state = State.follower
+                term_number = resp.term
+                state_out()
 
 
-def heartbeat():
+def heartbeat(node_id):
     if not asleep and state == State.leader:
-            global term_number
-            addr = f'{server_address[id][0]}:{server_address[id][1]}'
-            ch = grpc.insecure_channel()
-            stub = pb2_grpc.SimpleServiceStub(ch)
+            global term_number, id
+            addr = f'{server_address[node_id][0]}:{server_address[node_id][1]}'
+            ch = grpc.insecure_channel(addr)
+            stub = pb2_grpc.RaftServiceStub(ch)
 
-            # stub, Аня, вверяю тебе
 
-            #resp = stub.AppendEntries(...)
-            # if not resp.success:
-            #   global state
-            #   state = States.follower
-            #   state_out()
+            resp = stub.AppendEntries(pb2.NodeInfo(term=term_number, id=id))
+            success= resp.result
+            if not success:
+                global state, term_number
+                term_number= resp.term
+                state = State.follower
+                state_out()
+
 
 
 def leader_job():
@@ -148,8 +148,7 @@ def leader_job():
 def send_to_all(func):
     servers = []
     for n in server_address:
-        ip, port = server_address[n]
-        servers.append(Thread(target=func, args=(f'{ip}:{port}',)))
+        servers.append(Thread(target=func, args=(n,)))
     [t.start() for t in servers]
     [t.join() for t in servers]
 
@@ -186,7 +185,7 @@ def suspend(period):
         asleep = False
 
 
-def get_leader(self):
+def get_leader():
     if not asleep:
         result = f'{leader_info[0]} {leader_info[1]}:{leader_info[2]}'
         print(result)
@@ -195,28 +194,6 @@ def get_leader(self):
 timer_t = Thread(target=timer_thr)
 lead_t = Thread(target=leader_job)
 
-""" 
-Если вкратце, append_entries в хенделере должен 
-менять состояние сервера, примерный пример кода:
-
-AppendEntries(term, leaderId)
-if not asleep:
-    global timer_restart
-    timer_restart = True
-    if term >= term_number:
-        updated_state = True if term > term_number else False
-        if leaderId is not leader_info[0]:
-            global leader_info
-            ip,port = server_address[leaderId]
-            leader_info = (leaderId, ip, port)
-        global term_number
-        term_number = term
-        state = State.Follower
-        if updated_state:
-            state_out()
-        return (term_number, True)
-    return (term_number, False)
-"""
 
 def AppendEntries(term, leader_id):
     if asleep:
@@ -237,68 +214,15 @@ def AppendEntries(term, leader_id):
     return (term_number, False)
 # Ну а остальное клиентское, там просто запросы по функциям 
 
-"""
-class Handler(pb2_grpc.SimpleServiceServicer):
+class Handler(pb2_grpc.RaftServiceServicer):
 
-    def ReloadTable(self, request, context):
-        Update()
-        return pb2.GetInfo()
+    def AskVote(self, request, context):
+        res= vote_check(request.term, request.result)
+        return pb2.VoteResult(term=res[0],result= res[1])
 
-    def GetType(self, request, context):
-        return pb2.TypeReply(type="Node")
+    def AppendEntries(self, request, context):
+       res= AppendEntries(request.term, request.id)
+       return pb2.VoteResult(term=res[0],result= res[1])
 
-    def Find(self, request, context):
-        flag, reply = find(request.key)
-        msg = ""
-        if flag:
-            msg = f'{reply[0]}||{reply[1]}'
-        else:
-            msg = reply
-        return pb2.SRFReply(reply=msg, success=flag)
-
-    def FindKey(self, request, context):
-        flag, reply = find(request.key)
-        if reply[0] == nodeid:
-            if request.key in data:
-                return pb2.SRFReply(reply=f"{request.key} is saved in {nodeid}", success=True)
-        else:
-            ch = grpc.insecure_channel(reply[1])
-            f_stub = pb2_grpc.SimpleServiceStub(ch)
-            repl = f_stub.GetKeysText(pb2.GetInfo())
-            if request.key in repl.keys:
-                return pb2.SRFReply(reply=f"{request.key} is saved in {reply[0]}", success=True)
-        return pb2.SRFReply(reply=f'{request.key} does not exist in node {reply[0]}', success=False)
-
-    def SaveFromClient(self, request, context):
-        tup = save(request.key, request.text)
-        return pb2.SRFReply(reply=tup[1], success=tup[0])
-
-    def RemoveFromClient(self, request, context):
-        tup = remove(request.key)
-        return pb2.SRFReply(reply=tup[1], success=tup[0])
-
-    def Save(self, request, context):
-        if (request.key in data):
-            return pb2.SRFReply(reply=f"{request.key} already exists in node {nodeid}", success=False)
-        data[request.key] = request.text
-        return pb2.SRFReply(reply=f"{request.key} is saved in node {nodeid}", success=True)
-
-    def Remove(self, request, context):
-        if (request.key not in data):
-            return pb2.SRFReply(reply=f"{request.key} does not exist in node {nodeid}", success=False)
-        del data[request.key]
-        return pb2.SRFReply(reply=f"{request.key} is removed from {nodeid}", success=True)
-
-    def GetNode(self, request, context):
-        msg = []
-        for key in finger_table:
-            msg.append(f'{key}:   {finger_table[key]}')
-        return pb2.GetNodeChordReply(id=nodeid, table=msg)
-
-    def GetKeysText(self, request, context):
-        msg = []
-        k = GetKeys()
-        for key in k:
-            msg.append(key)
-        return pb2.KeysTextReply(keys=msg)
-"""
+    def Suspend(self, request, context):
+        suspend(request.period)
